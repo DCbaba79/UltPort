@@ -1,20 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useInView } from 'framer-motion';
-import { useRef } from 'react';
+import emailjs from '@emailjs/browser';
 
-import YouTubeLogo from '/mnt/data/7c1a8bc5-49fa-417f-b25d-2551eecf1ca4.png';
+// Social media logos (optional, remove if unused)
 const InstagramLogo = '/mnt/data/7c1a8bc5-49fa-417f-b25d-2551eecf1ca4.png';
 const YouTubeLogoURL = 'https://upload.wikimedia.org/wikipedia/commons/0/09/YouTube_full-color_icon_%282017%29.svg';
+
 const Contact: React.FC = () => {
   const ref = useRef(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     project: '',
     message: ''
   });
+
+  const [status, setStatus] = useState("");
 
   const contactInfo = [
     {
@@ -43,17 +48,33 @@ const Contact: React.FC = () => {
     }
   ];
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle form submission
-    console.log('Form submitted:', formData);
-  };
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formRef.current) return;
+
+    // ✅ Replace these with your actual EmailJS credentials
+    const serviceId = "service_fhg59a8";
+    const templateId = "template_lf9ngae";
+    const publicKey = "2l41l6cFAyte5tcI_";
+
+    emailjs
+      .sendForm(serviceId, templateId, formRef.current, publicKey)
+      .then(() => {
+        setStatus("✅ Message sent successfully!");
+        setFormData({ name: "", email: "", project: "", message: "" });
+      })
+      .catch((error) => {
+        console.error("EmailJS error:", error);
+        setStatus("❌ Failed to send message. Please try again.");
+      });
   };
 
   return (
@@ -118,7 +139,7 @@ const Contact: React.FC = () => {
             >
               <h4 className="text-lg font-semibold mb-4">Follow My Work</h4>
               <div className="flex space-x-4">
-                {[ 'YouTube', 'Instagram'].map((platform, index) => (
+                {['YouTube', 'Instagram'].map((platform) => (
                   <motion.a
                     key={platform}
                     whileHover={{ scale: 1.1, y: -2 }}
@@ -140,7 +161,7 @@ const Contact: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.4 }}
             className="glass-strong p-8 rounded-xl"
           >
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium mb-2">
@@ -225,6 +246,10 @@ const Contact: React.FC = () => {
                 Send Message
               </motion.button>
             </form>
+
+            {status && (
+              <p className="mt-4 text-center text-sm text-muted-foreground">{status}</p>
+            )}
 
             <motion.div
               initial={{ opacity: 0 }}
